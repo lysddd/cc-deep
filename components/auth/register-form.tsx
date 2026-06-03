@@ -85,6 +85,13 @@ export function RegisterForm() {
           />
         </div>
 
+        <p className="text-xs text-gray-400 text-center mt-3">
+          注册即表示同意
+          <Link href="/terms" className="text-blue-600 hover:underline">服务条款</Link>
+          和
+          <Link href="/privacy" className="text-blue-600 hover:underline">隐私政策</Link>
+        </p>
+
         <button
           type="submit"
           disabled={loading}
@@ -93,6 +100,13 @@ export function RegisterForm() {
           {loading ? '注册中...' : '注册'}
         </button>
       </form>
+
+      <p className="text-xs text-gray-400 text-center mt-3">
+        注册即表示同意
+        <Link href="/terms" className="text-blue-600 hover:underline">服务条款</Link>
+        和
+        <Link href="/privacy" className="text-blue-600 hover:underline">隐私政策</Link>
+      </p>
 
       <p className="text-sm text-gray-500 text-center mt-4">
         已有账号？<Link href="/login" className="text-blue-600 hover:underline">登录</Link>
