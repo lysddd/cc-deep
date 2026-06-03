@@ -1,2 +1,2 @@
 # cc-deep
-cc-deep
+cc + deepseek
