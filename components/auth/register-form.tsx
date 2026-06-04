@@ -19,6 +19,20 @@ export function RegisterForm() {
     setSuccess('')
     setLoading(true)
 
+    // Check email and display name availability
+    const checkRes = await fetch('/api/auth/check-availability', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, display_name: displayName }),
+    })
+
+    const checkData = await checkRes.json()
+    if (!checkData.available) {
+      setError(checkData.errors.join('；'))
+      setLoading(false)
+      return
+    }
+
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -100,13 +114,6 @@ export function RegisterForm() {
           {loading ? '注册中...' : '注册'}
         </button>
       </form>
-
-      <p className="text-xs text-gray-400 text-center mt-3">
-        注册即表示同意
-        <Link href="/terms" className="text-blue-600 hover:underline">服务条款</Link>
-        和
-        <Link href="/privacy" className="text-blue-600 hover:underline">隐私政策</Link>
-      </p>
 
       <p className="text-sm text-gray-500 text-center mt-4">
         已有账号？<Link href="/login" className="text-blue-600 hover:underline">登录</Link>
