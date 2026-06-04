@@ -8,11 +8,11 @@ TodoNow 是一款面向国内用户的**条件驱动的任务+通知系统**。�
 
 ### 产品定位
 
-| 维度 | 说明 |
-|------|------|
-| 目标用户 | 国内个人用户 |
-| 规模阶段 | MVP 小规模验证（几百到几千用户） |
-| 商业模式 | 待定（MVP 先免费，后续探索付费功能） |
+| 维度     | 说明                                             |
+| -------- | ------------------------------------------------ |
+| 目标用户 | 国内个人用户                                     |
+| 规模阶段 | MVP 小规模验证（几百到几千用户）                 |
+| 商业模式 | 待定（MVP 先免费，后续探索付费功能）             |
 | 核心差异 | 条件驱动的通知系统 + 微信端打卡 + 自定义通知内容 |
 
 ## 2. 命名 & 品牌
@@ -25,11 +25,11 @@ TodoNow 是一款面向国内用户的**条件驱动的任务+通知系统**。�
 
 ### 3.1 任务条件类型
 
-| 类型 | 说明 | 示例 |
-|------|------|------|
-| 周期性签到 | 按周期频率打卡，未达标触发通知 | 每天打卡 1 次、每周 3 次 |
-| 截止时间未完成 | 在截止时间前需确认完成 | 周五 18:00 前完成周报 |
-| 次数达标 | 某周期内达到指定次数 | 每月运动 12 次 |
+| 类型           | 说明                           | 示例                     |
+| -------------- | ------------------------------ | ------------------------ |
+| 周期性签到     | 按周期频率打卡，未达标触发通知 | 每天打卡 1 次、每周 3 次 |
+| 截止时间未完成 | 在截止时间前需手动确认完成     | 周五 18:00 前完成周报    |
+| 次数达标       | 某周期内达到指定次数           | 每月运动 12 次           |
 
 未来可扩展更多条件类型（通过 JSONB 字段实现，无需改表）。
 
@@ -77,27 +77,27 @@ tasks 1→N notifications 1→N notification_logs
 
 **users**（扩展 Supabase `auth.users`）
 
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| id | uuid | 主键，关联 auth.users |
-| email | text | 邮箱 |
-| wechat_openid | text? | 微信绑定标识 |
-| display_name | text | 显示名称 |
-| email_verified_at | timestamptz | 邮箱验证时间 |
-| created_at | timestamptz | 创建时间 |
+| 字段              | 类型        | 说明                  |
+| ----------------- | ----------- | --------------------- |
+| id                | uuid        | 主键，关联 auth.users |
+| email             | text        | 邮箱                  |
+| wechat_openid     | text?       | 微信绑定标识          |
+| display_name      | text        | 显示名称              |
+| email_verified_at | timestamptz | 邮箱验证时间          |
+| created_at        | timestamptz | 创建时间              |
 
 **tasks**
 
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| id | uuid | 主键 |
-| user_id | uuid → users | 创建者 |
-| title | text | 任务名称 |
-| description | text? | 任务描述 |
-| task_type | text | checkin / deadline / count |
-| condition_config | jsonb | 灵活条件配置（见下方） |
-| is_active | boolean | 是否启用 |
-| created_at | timestamptz | 创建时间 |
+| 字段             | 类型         | 说明                       |
+| ---------------- | ------------ | -------------------------- |
+| id               | uuid         | 主键                       |
+| user_id          | uuid → users | 创建者                     |
+| title            | text         | 任务名称                   |
+| description      | text?        | 任务描述                   |
+| task_type        | text         | checkin / deadline / count |
+| condition_config | jsonb        | 灵活条件配置（见下方）     |
+| is_active        | boolean      | 是否启用                   |
+| created_at       | timestamptz  | 创建时间                   |
 
 **condition_config 示例**：
 
@@ -113,37 +113,37 @@ tasks 1→N notifications 1→N notification_logs
 
 **checkin_records**
 
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| id | uuid | 主键 |
-| task_id | uuid → tasks | 关联任务 |
-| user_id | uuid → users | 打卡用户 |
-| checked_at | timestamptz | 打卡时间 |
-| source | text | web / wechat |
+| 字段       | 类型         | 说明         |
+| ---------- | ------------ | ------------ |
+| id         | uuid         | 主键         |
+| task_id    | uuid → tasks | 关联任务     |
+| user_id    | uuid → users | 打卡用户     |
+| checked_at | timestamptz  | 打卡时间     |
+| source     | text         | web / wechat |
 
 **notifications**
 
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| id | uuid | 主键 |
-| task_id | uuid → tasks | 关联任务 |
-| channel | text | email / wechat_template |
-| recipients | jsonb | 接收人列表 |
-| template | jsonb | 自定义通知模板（标题+正文+变量） |
-| is_active | boolean | 是否启用 |
+| 字段       | 类型         | 说明                             |
+| ---------- | ------------ | -------------------------------- |
+| id         | uuid         | 主键                             |
+| task_id    | uuid → tasks | 关联任务                         |
+| channel    | text         | email / wechat_template          |
+| recipients | jsonb        | 接收人列表                       |
+| template   | jsonb        | 自定义通知模板（标题+正文+变量） |
+| is_active  | boolean      | 是否启用                         |
 
 **notification_logs**
 
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| id | uuid | 主键 |
-| notification_id | uuid → notifications | 关联通知配置 |
-| task_id | uuid → tasks | 关联任务 |
-| recipient | text | 实际接收人 |
-| channel | text | 发送渠道 |
-| status | text | sent / failed |
-| sent_at | timestamptz | 发送时间 |
-| error_message | text? | 失败原因 |
+| 字段            | 类型                 | 说明          |
+| --------------- | -------------------- | ------------- |
+| id              | uuid                 | 主键          |
+| notification_id | uuid → notifications | 关联通知配置  |
+| task_id         | uuid → tasks         | 关联任务      |
+| recipient       | text                 | 实际接收人    |
+| channel         | text                 | 发送渠道      |
+| status          | text                 | sent / failed |
+| sent_at         | timestamptz          | 发送时间      |
+| error_message   | text?                | 失败原因      |
 
 ## 5. 系统架构
 
@@ -173,24 +173,26 @@ tasks 1→N notifications 1→N notification_logs
 
 ### 技术选型
 
-| 组件 | 选型 | 原因 |
-|------|------|------|
-| 前端框架 | Next.js (App Router) | 全栈 JS/TS，前端开发者友好 |
-| 认证 | Supabase Auth | 开箱即用，邮箱注册+RLS |
-| 数据库 | Supabase PostgreSQL | JSONB 灵活字段，Row Level Security |
-| 实时更新 | Supabase Realtime | 仪表盘实时刷新 |
-| 定时任务 | pg_cron | 每分钟扫描到期任务，无额外运维 |
-| 邮件 | Resend / SendGrid | 开发者友好的邮件 API |
-| 微信 | 微信服务号 | 模板消息 + OAuth + H5 打卡 |
-| 部署 | 国内 Node.js 环境 | ICP 备案必需 |
+| 组件     | 选型                 | 原因                               |
+| -------- | -------------------- | ---------------------------------- |
+| 前端框架 | Next.js (App Router) | 全栈 JS/TS，前端开发者友好         |
+| 认证     | Supabase Auth        | 开箱即用，邮箱注册+RLS             |
+| 数据库   | Supabase PostgreSQL  | JSONB 灵活字段，Row Level Security |
+| 实时更新 | Supabase Realtime    | 仪表盘实时刷新                     |
+| 定时任务 | pg_cron              | 每分钟扫描到期任务，无额外运维     |
+| 邮件     | Resend / SendGrid    | 开发者友好的邮件 API               |
+| 微信     | 微信服务号           | 模板消息 + OAuth + H5 打卡         |
+| 部署     | 国内 Node.js 环境    | ICP 备案必需                       |
 
 ## 6. 合规设计（「死了么」教训对标）
 
 ### 6.1 命名合规
+
 - ✅ 中性名称，无敏感字
 - ⏳ 开发前完成商标查询、域名注册、服务号预审
 
 ### 6.2 数据隐私
+
 - **P0** 隐私政策 + 用户协议（注册时必须展示）
 - **P0** 最小化数据收集（仅邮箱、openid、任务数据）
 - **P0** 注销账号（设置页提供，清除全部数据）
@@ -198,34 +200,38 @@ tasks 1→N notifications 1→N notification_logs
 - **P1** notification_logs 审计追踪（已内置在数据模型中）
 
 ### 6.3 知识产权
+
 - 原创 UI/Logo 设计（使用 Lucide 等开源图标库）
 - 第三方依赖统一用 MIT 协议
 - 不碰任何已有产品的名称、视觉元素
 
 ### 6.4 公司/运营
+
 - MVP 阶段可以个人开发者名义运行
 - 付费功能上线前：注册公司/个体户 + ICP 备案
 - 确保注册地址可接收工商信函
 
 ### 6.5 平台规则
+
 - 不刷榜、不做 ASO 灰色操作
 - 遵守微信公众平台运营规范
 
 ### 合规优先级总览
 
-| 优先级 | 事项 | 不做的后果 |
-|--------|------|-----------|
-| 🔴 P0 | 隐私政策 + 用户协议 | 被举报下架 |
-| 🔴 P0 | 注销账号功能 | 违反《个人信息保护法》 |
-| 🔴 P0 | 通知邮件免责声明 | 被投诉骚扰 |
-| 🟡 P1 | ICP 备案 | 网站无法合法上线 |
-| 🟡 P1 | 注册公司/个体户 | 无法收费 |
-| 🟢 P2 | 微信服务号认证 | 模板消息需要 |
-| 🟢 P2 | 商标注册 | 品牌被抢注 |
+| 优先级 | 事项                | 不做的后果             |
+| ------ | ------------------- | ---------------------- |
+| 🔴 P0  | 隐私政策 + 用户协议 | 被举报下架             |
+| 🔴 P0  | 注销账号功能        | 违反《个人信息保护法》 |
+| 🔴 P0  | 通知邮件免责声明    | 被投诉骚扰             |
+| 🟡 P1  | ICP 备案            | 网站无法合法上线       |
+| 🟡 P1  | 注册公司/个体户     | 无法收费               |
+| 🟢 P2  | 微信服务号认证      | 模板消息需要           |
+| 🟢 P2  | 商标注册            | 品牌被抢注             |
 
 ## 7. MVP 范围
 
 ### 包含
+
 - ✅ 邮箱注册 + 登录
 - ✅ 三种任务条件（签到/截止/次数）
 - ✅ 邮件通知 + 自定义模板
@@ -235,6 +241,7 @@ tasks 1→N notifications 1→N notification_logs
 - ✅ 隐私政策 + 用户协议
 
 ### 不包含
+
 - ❌ 短信通知（后期付费功能）
 - ❌ 任务广场（后期）
 - ❌ 统计/热力图（后期）
