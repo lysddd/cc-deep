@@ -67,7 +67,7 @@ export function RegisterForm() {
       // User exists but identities is empty = already registered
       setError('该邮箱已注册但未验证。请检查邮箱中的验证邮件（含垃圾邮件箱），或点击下方按钮重新发送')
     } else {
-      setSuccess('注册成功！请检查邮箱（含垃圾邮件箱）完成验证。')
+      setSuccess('您的账户已成功创建。我们已向您的邮箱发送了一封确认邮件。请按照确认邮件中的说明激活您的账户。')
     }
     setLoading(false)
   }
