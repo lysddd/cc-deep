@@ -1,9 +1,15 @@
-import { createClient } from '@/lib/supabase/server'
+import { createClient } from '@supabase/supabase-js'
 import { sendNotificationEmail } from '@/lib/email/send'
 import type { Task } from '@/types'
 
+// Use service_role client to bypass RLS for system-level cron job
+const adminClient = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
+
 export async function checkAndNotify() {
-  const supabase = await createClient()
+  const supabase = adminClient
 
   const { data: tasks, error } = await supabase
     .from('tasks')
