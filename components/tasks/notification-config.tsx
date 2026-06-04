@@ -16,24 +16,50 @@ interface Props {
   onChange: (value: NotificationEntry[]) => void
 }
 
+const STORAGE_KEY = 'todonow_last_notification'
+
+function loadDefaults(): { channel: string; recipients: { email?: string; name?: string }[]; template: { subject: string; body: string } } {
+  if (typeof window === 'undefined') {
+    return {
+      channel: 'email',
+      recipients: [{ email: '', name: '' }],
+      template: {
+        subject: '提醒：{{task_name}} 未按时完成',
+        body: '你好，你设置的「{{task_name}}」任务需要在 {{deadline}} 前完成，目前尚未收到完成确认。\n\n—— TodoNow 自动提醒',
+      },
+    }
+  }
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY)
+    if (saved) return JSON.parse(saved)
+  } catch {}
+  return {
+    channel: 'email',
+    recipients: [{ email: '', name: '' }],
+    template: {
+      subject: '提醒：{{task_name}} 未按时完成',
+      body: '你好，你设置的「{{task_name}}」任务需要在 {{deadline}} 前完成，目前尚未收到完成确认。\n\n—— TodoNow 自动提醒',
+    },
+  }
+}
+
+function saveDefaults(entry: { channel: string; recipients: { email?: string; name?: string }[]; template: { subject: string; body: string } }) {
+  if (typeof window === 'undefined') return
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(entry))
+  } catch {}
+}
+
 export function NotificationConfig({ value, onChange }: Props) {
   function addNotification() {
-    onChange([
-      ...value,
-      {
-        channel: 'email',
-        recipients: [{ email: '', name: '' }],
-        template: {
-          subject: '提醒：{{task_name}} 未按时完成',
-          body: '你好，你设置的「{{task_name}}」任务需要在 {{deadline}} 前完成，目前尚未收到完成确认。\n\n—— TodoNow 自动提醒',
-        },
-      },
-    ])
+    const defaults = loadDefaults()
+    onChange([...value, defaults])
   }
 
   function updateNotification(index: number, field: string, val: unknown) {
     const updated = [...value]
     updated[index] = { ...updated[index], [field]: val }
+    saveDefaults(updated[index])
     onChange(updated)
   }
 
@@ -42,6 +68,7 @@ export function NotificationConfig({ value, onChange }: Props) {
     const recipients = [...updated[notifIndex].recipients]
     recipients[recipIndex] = { ...recipients[recipIndex], [field]: val }
     updated[notifIndex] = { ...updated[notifIndex], recipients }
+    saveDefaults(updated[notifIndex])
     onChange(updated)
   }
 

@@ -6,6 +6,15 @@ import { ConditionConfig } from './condition-config'
 import { NotificationConfig } from './notification-config'
 import type { TaskType, TaskCondition } from '@/types'
 
+function loadStoredNotifications(): NotificationEntry[] {
+  if (typeof window === 'undefined') return []
+  try {
+    const saved = localStorage.getItem('todonow_last_notification')
+    if (saved) return [JSON.parse(saved)]
+  } catch {}
+  return []
+}
+
 interface NotificationEntry {
   channel: string
   recipients: { email?: string; name?: string }[]
@@ -33,7 +42,7 @@ export function TaskForm({ mode, defaultValues }: Props) {
     (defaultValues?.condition_config as unknown as Record<string, unknown>) ?? { type: 'checkin', frequency: 'daily', count_per_period: 1, grace_minutes: 0, start_date: '' }
   )
   const [notifications, setNotifications] = useState<NotificationEntry[]>(
-    defaultValues?.notifications ?? []
+    defaultValues?.notifications?.length ? defaultValues.notifications : loadStoredNotifications()
   )
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
