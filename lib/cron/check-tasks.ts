@@ -68,7 +68,7 @@ export async function checkAndNotify() {
 }
 
 async function evaluateCondition(task: Task): Promise<boolean> {
-  const supabase = await createClient()
+  const supabase = adminClient
   const cfg = task.condition_config
 
   if (cfg.type === 'checkin') {
