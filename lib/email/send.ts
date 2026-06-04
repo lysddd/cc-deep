@@ -32,7 +32,7 @@ export async function sendNotificationEmail(input: {
 
     try {
       await resend.emails.send({
-        from: 'TodoNow <noreply@todonow.app>',
+        from: 'TodoNow <onboarding@resend.dev>',
         to: [recipient.email],
         subject,
         text: body + disclaimer,
