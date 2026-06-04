@@ -1,4 +1,4 @@
 # cc-deep
 
 cc + deepseek
-2222
+todonow 
