@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
+import { EmailInput } from '@/components/ui/email-input'
 
 export function RegisterForm() {
   const [email, setEmail] = useState('')
@@ -111,10 +112,9 @@ export function RegisterForm() {
 
         <div>
           <label className="block text-sm font-medium mb-1">邮箱</label>
-          <input
-            type="email"
+          <EmailInput
             value={email}
-            onChange={e => setEmail(e.target.value)}
+            onChange={setEmail}
             required
             className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="you@example.com"
