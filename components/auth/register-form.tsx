@@ -13,6 +13,19 @@ export function RegisterForm() {
   const [loading, setLoading] = useState(false)
   const supabase = createClient()
 
+  async function handleResendConfirm() {
+    if (!email) return
+    setError('')
+    setLoading(true)
+    const { error } = await supabase.auth.resend({ email, type: 'signup' })
+    if (error) {
+      setError(error.message)
+    } else {
+      setSuccess('验证邮件已重新发送，请检查邮箱（含垃圾邮件箱）')
+    }
+    setLoading(false)
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError('')
@@ -33,7 +46,7 @@ export function RegisterForm() {
       return
     }
 
-    const { error } = await supabase.auth.signUp({
+    const { error: signUpError, data } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -41,10 +54,20 @@ export function RegisterForm() {
       },
     })
 
-    if (error) {
-      setError(error.message)
+    if (signUpError) {
+      // Handle specific error codes
+      if (signUpError.code === 'email_not_confirmed') {
+        setError('该邮箱已注册但未验证。请检查邮箱中的验证邮件（含垃圾邮件箱），或点击下方按钮重新发送')
+      } else if (signUpError.code === 'user_already_exists' || signUpError.message?.includes('already')) {
+        setError('该邮箱已被注册。如忘记密码请使用重置功能，或直接登录')
+      } else {
+        setError(signUpError.message)
+      }
+    } else if (data.user?.identities?.length === 0) {
+      // User exists but identities is empty = already registered
+      setError('该邮箱已注册但未验证。请检查邮箱中的验证邮件（含垃圾邮件箱），或点击下方按钮重新发送')
     } else {
-      setSuccess('注册成功！请检查邮箱完成验证。')
+      setSuccess('注册成功！请检查邮箱（含垃圾邮件箱）完成验证。')
     }
     setLoading(false)
   }
@@ -55,7 +78,19 @@ export function RegisterForm() {
       <p className="text-gray-500 text-center mb-6">创建新账号</p>
 
       {error && (
-        <div className="bg-red-50 text-red-600 text-sm p-3 rounded-lg mb-4">{error}</div>
+        <div className="bg-red-50 text-red-600 text-sm p-3 rounded-lg mb-4">
+          <p>{error}</p>
+          {error.includes('未验证') && (
+            <button
+              type="button"
+              onClick={handleResendConfirm}
+              disabled={loading}
+              className="mt-2 text-blue-600 hover:underline text-sm font-medium"
+            >
+              重新发送验证邮件
+            </button>
+          )}
+        </div>
       )}
       {success && (
         <div className="bg-green-50 text-green-600 text-sm p-3 rounded-lg mb-4">{success}</div>
@@ -111,7 +146,7 @@ export function RegisterForm() {
           disabled={loading}
           className="w-full bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50"
         >
-          {loading ? '注册中...' : '注册'}
+          {loading ? '处理中...' : '注册'}
         </button>
       </form>
 
