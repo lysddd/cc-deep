@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { ConditionConfig } from './condition-config'
 import { NotificationConfig } from './notification-config'
@@ -42,10 +42,22 @@ export function TaskForm({ mode, defaultValues }: Props) {
     (defaultValues?.condition_config as unknown as Record<string, unknown>) ?? { type: 'checkin', frequency: 'daily', count_per_period: 1, grace_minutes: 0, start_date: '' }
   )
   const [notifications, setNotifications] = useState<NotificationEntry[]>(
-    defaultValues?.notifications?.length ? defaultValues.notifications : loadStoredNotifications()
+    defaultValues?.notifications ?? []
   )
+  const [notificationsLoaded, setNotificationsLoaded] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+
+  // Load stored notification defaults on client mount (bypasses SSR)
+  useEffect(() => {
+    if (mode === 'create' && !defaultValues?.notifications?.length && !notificationsLoaded) {
+      const stored = loadStoredNotifications()
+      if (stored.length > 0) {
+        setNotifications(stored)
+      }
+      setNotificationsLoaded(true)
+    }
+  }, [mode, defaultValues, notificationsLoaded])
 
   function handleTaskTypeChange(type: TaskType) {
     setTaskType(type)
