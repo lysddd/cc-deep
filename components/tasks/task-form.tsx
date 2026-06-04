@@ -6,8 +6,7 @@ import { ConditionConfig } from './condition-config'
 import { NotificationConfig } from './notification-config'
 import type { TaskType, TaskCondition } from '@/types'
 
-function loadStoredNotifications(): NotificationEntry[] {
-  if (typeof window === 'undefined') return []
+function getStoredNotifications(): NotificationEntry[] {
   try {
     const saved = localStorage.getItem('todonow_last_notification')
     if (saved) return [JSON.parse(saved)]
@@ -44,20 +43,17 @@ export function TaskForm({ mode, defaultValues }: Props) {
   const [notifications, setNotifications] = useState<NotificationEntry[]>(
     defaultValues?.notifications ?? []
   )
-  const [notificationsLoaded, setNotificationsLoaded] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
-  // Load stored notification defaults on client mount (bypasses SSR)
+  // Load stored notification defaults on client mount
   useEffect(() => {
-    if (mode === 'create' && !defaultValues?.notifications?.length && !notificationsLoaded) {
-      const stored = loadStoredNotifications()
-      if (stored.length > 0) {
-        setNotifications(stored)
-      }
-      setNotificationsLoaded(true)
+    if (mode === 'create' && (!defaultValues?.notifications || defaultValues.notifications.length === 0)) {
+      const stored = getStoredNotifications()
+      if (stored.length > 0) setNotifications(stored)
     }
-  }, [mode, defaultValues, notificationsLoaded])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   function handleTaskTypeChange(type: TaskType) {
     setTaskType(type)
@@ -98,6 +94,10 @@ export function TaskForm({ mode, defaultValues }: Props) {
         throw new Error(data.error || '操作失败')
       }
 
+      // Save last notification config for next time
+      if (notifications.length > 0) {
+        try { localStorage.setItem('todonow_last_notification', JSON.stringify(notifications[0])) } catch {}
+      }
       router.push('/tasks')
       router.refresh()
     } catch (err) {
