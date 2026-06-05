@@ -9,6 +9,7 @@ export default function SettingsPage() {
   const [deleteLoading, setDeleteLoading] = useState(false)
   const [deleteError, setDeleteError] = useState('')
   const [showPwdForm, setShowPwdForm] = useState(false)
+  const [oldPassword, setOldPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [pwdError, setPwdError] = useState('')
   const [pwdSuccess, setPwdSuccess] = useState('')
@@ -22,12 +23,32 @@ export default function SettingsPage() {
     setPwdSuccess('')
     setPwdLoading(true)
 
+    // Re-authenticate with old password first
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user?.email) {
+      setPwdError('无法获取用户信息')
+      setPwdLoading(false)
+      return
+    }
+
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: user.email,
+      password: oldPassword,
+    })
+
+    if (signInError) {
+      setPwdError('旧密码不正确')
+      setPwdLoading(false)
+      return
+    }
+
     const { error } = await supabase.auth.updateUser({ password: newPassword })
 
     if (error) {
       setPwdError(error.message)
     } else {
       setPwdSuccess('密码修改成功')
+      setOldPassword('')
       setNewPassword('')
       setShowPwdForm(false)
     }
@@ -89,6 +110,18 @@ export default function SettingsPage() {
             {pwdError && (
               <div className="bg-red-50 text-red-600 text-sm p-2 rounded">{pwdError}</div>
             )}
+            <div>
+              <label className="block text-sm font-medium mb-1">旧密码</label>
+              <input
+                type="password"
+                value={oldPassword}
+                onChange={e => setOldPassword(e.target.value)}
+                required
+                minLength={6}
+                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="输入当前密码"
+              />
+            </div>
             <div>
               <label className="block text-sm font-medium mb-1">新密码</label>
               <input
