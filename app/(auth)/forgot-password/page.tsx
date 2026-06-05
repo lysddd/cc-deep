@@ -5,6 +5,36 @@ import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { EmailInput } from '@/components/ui/email-input'
 
+const MAX_ATTEMPTS = 3
+const RATE_WINDOW_MS = 3600000 // 1 hour
+const STORAGE_KEY = 'todonow_pwd_reset_attempts'
+
+function checkRateLimit(): boolean {
+  if (typeof window === 'undefined') return true
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY)
+    if (!stored) return true
+    const attempts = JSON.parse(stored)
+    const now = Date.now()
+    // Clean old attempts
+    const recent = attempts.filter((t: number) => now - t < RATE_WINDOW_MS)
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(recent))
+    return recent.length < MAX_ATTEMPTS
+  } catch {
+    return true
+  }
+}
+
+function recordAttempt() {
+  if (typeof window === 'undefined') return
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY)
+    const attempts = stored ? JSON.parse(stored) : []
+    attempts.push(Date.now())
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(attempts))
+  } catch {}
+}
+
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('')
   const [error, setError] = useState('')
@@ -15,14 +45,30 @@ export default function ForgotPasswordPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError('')
+
+    if (!email.includes('@')) {
+      setError('请输入有效的邮箱地址')
+      return
+    }
+
+    if (!checkRateLimit()) {
+      setError('操作过于频繁，请 1 小时后再试')
+      return
+    }
+
     setLoading(true)
+    recordAttempt()
 
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/reset-password`,
     })
 
     if (error) {
-      setError(error.message)
+      if (error.code === 'over_email_send_rate_limit') {
+        setError('邮件发送过于频繁，请稍后再试')
+      } else {
+        setError('发送失败，请稍后再试')
+      }
     } else {
       setSuccess(true)
     }
@@ -32,10 +78,21 @@ export default function ForgotPasswordPage() {
   if (success) {
     return (
       <div className="bg-white rounded-xl shadow-sm border p-8 text-center">
-        <h1 className="text-2xl font-bold mb-2">邮件已发送</h1>
-        <p className="text-gray-500 mb-6">
-          如果该邮箱已注册，我们会发送一封密码重置邮件，请查收（含垃圾邮件箱）。
-        </p>
+        <h1 className="text-2xl font-bold mb-4">邮件已发送</h1>
+        <div className="text-gray-500 space-y-2 mb-6">
+          <p>如果 <strong>{email}</strong> 已注册，我们会发送一封密码重置邮件。</p>
+          <p className="text-sm text-gray-400">请检查收件箱（含垃圾邮件箱）。</p>
+          <p className="text-sm text-gray-400">链接有效期为 1 小时。</p>
+        </div>
+        <div className="text-sm text-gray-400 mb-4">
+          没有收到邮件？
+          <button
+            onClick={() => setSuccess(false)}
+            className="text-blue-600 hover:underline ml-1"
+          >
+            重新发送
+          </button>
+        </div>
         <Link href="/login" className="text-blue-600 hover:underline text-sm">
           返回登录
         </Link>
