@@ -4,10 +4,18 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Check } from 'lucide-react'
 
+interface TaskItem {
+  id: string
+  title: string
+  task_type: string
+  condition_config: Record<string, unknown>
+}
+
 export function TodayCheckins() {
-  const [tasks, setTasks] = useState<Array<{ id: string; title: string; task_type: string }>>([])
+  const [tasks, setTasks] = useState<TaskItem[]>([])
   const [checked, setChecked] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
   const supabase = createClient()
 
   useEffect(() => {
@@ -17,7 +25,7 @@ export function TodayCheckins() {
 
       const { data: allTasks } = await supabase
         .from('tasks')
-        .select('id, title, task_type')
+        .select('id, title, task_type, condition_config')
         .eq('user_id', user.id)
         .eq('is_active', true)
 
@@ -37,6 +45,7 @@ export function TodayCheckins() {
   }, [])
 
   async function handleCheckin(taskId: string) {
+    setError('')
     setLoading(true)
     const res = await fetch('/api/checkins', {
       method: 'POST',
@@ -45,8 +54,27 @@ export function TodayCheckins() {
     })
     if (res.ok) {
       setChecked(prev => new Set([...prev, taskId]))
+    } else {
+      const data = await res.json()
+      setError(data.error || '打卡失败')
     }
     setLoading(false)
+  }
+
+  function isDeadlinePassed(task: TaskItem): boolean {
+    if (task.task_type !== 'deadline') return false
+    const cfg = task.condition_config
+    if (cfg.type !== 'deadline' || !cfg.deadline) return false
+    return Date.now() > new Date(cfg.deadline as string).getTime()
+  }
+
+  function formatDeadlineTime(task: TaskItem): string {
+    if (task.task_type !== 'deadline') return ''
+    const cfg = task.condition_config
+    if (cfg.type !== 'deadline' || !cfg.deadline) return ''
+    return new Date(cfg.deadline as string).toLocaleString('zh-CN', {
+      month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
+    })
   }
 
   if (tasks.length === 0 && !loading) {
@@ -55,25 +83,38 @@ export function TodayCheckins() {
 
   return (
     <div className="space-y-2">
-      {tasks.map(task => (
-        <div key={task.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-          <div>
-            <p className="font-medium text-sm">{task.title}</p>
-            <span className="text-xs text-gray-400">{task.task_type === 'checkin' ? '签到' : task.task_type === 'deadline' ? '截止' : '计数'}</span>
+      {error && (
+        <div className="bg-red-50 text-red-600 text-xs p-2 rounded mb-2">{error}</div>
+      )}
+      {tasks.map(task => {
+        const passed = isDeadlinePassed(task)
+        const deadlineTime = formatDeadlineTime(task)
+        return (
+          <div key={task.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+            <div>
+              <p className="font-medium text-sm">{task.title}</p>
+              <span className="text-xs text-gray-400">
+                {task.task_type === 'checkin' ? '签到' :
+                 task.task_type === 'deadline' ?
+                   `${passed ? '已截止' : '截止'} ${deadlineTime}` : '计数'}
+              </span>
+            </div>
+            <button
+              onClick={() => handleCheckin(task.id)}
+              disabled={checked.has(task.id) || loading || passed}
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors
+                ${checked.has(task.id)
+                  ? 'bg-green-100 text-green-600'
+                  : passed
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    : 'bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50'}`}
+            >
+              {checked.has(task.id) && <Check size={14} />}
+              {passed ? '已截止' : checked.has(task.id) ? '已打卡' : '打卡'}
+            </button>
           </div>
-          <button
-            onClick={() => handleCheckin(task.id)}
-            disabled={checked.has(task.id) || loading}
-            className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors
-              ${checked.has(task.id)
-                ? 'bg-green-100 text-green-600'
-                : 'bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50'}`}
-          >
-            {checked.has(task.id) && <Check size={14} />}
-            {checked.has(task.id) ? '已打卡' : '打卡'}
-          </button>
-        </div>
-      ))}
+        )
+      })}
     </div>
   )
 }
