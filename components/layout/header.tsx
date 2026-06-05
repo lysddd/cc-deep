@@ -30,7 +30,7 @@ export function Header({ onMenuClick }: Props) {
         <h2 className="text-lg font-semibold text-gray-800">TodoNow</h2>
       </div>
       <div className="flex items-center gap-3">
-        <span className="text-sm text-gray-500 hidden sm:block">{email}</span>
+        <span className="text-sm text-gray-500 hidden sm:block" suppressHydrationWarning>{email}</span>
       </div>
     </header>
   )
