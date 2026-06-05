@@ -23,29 +23,37 @@ export default function SettingsPage() {
     setPwdSuccess('')
     setPwdLoading(true)
 
-    // Re-authenticate with old password first
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user?.email) {
-      setPwdError('无法获取用户信息')
+    // Use Supabase REST API to pass both current_password and new password
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.access_token) {
+      setPwdError('登录已过期，请重新登录')
       setPwdLoading(false)
       return
     }
 
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email: user.email,
-      password: oldPassword,
-    })
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/user`,
+      {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+          apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        },
+        body: JSON.stringify({
+          password: newPassword,
+          current_password: oldPassword,
+        }),
+      }
+    )
 
-    if (signInError) {
-      setPwdError('旧密码不正确')
-      setPwdLoading(false)
-      return
-    }
-
-    const { error } = await supabase.auth.updateUser({ password: newPassword })
-
-    if (error) {
-      setPwdError(error.message)
+    if (!res.ok) {
+      const data = await res.json()
+      if (data.code === 'current_password_required') {
+        setPwdError('旧密码不正确')
+      } else {
+        setPwdError(data.message || '修改失败')
+      }
     } else {
       setPwdSuccess('密码修改成功')
       setOldPassword('')
