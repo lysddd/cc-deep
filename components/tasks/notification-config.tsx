@@ -1,5 +1,7 @@
 'use client'
 
+import { EmailInput } from '@/components/ui/email-input'
+
 interface Recipient {
   email?: string
   name?: string
@@ -153,13 +155,14 @@ export function NotificationConfig({ value, onChange }: Props) {
                   onChange={e => updateRecipient(ni, ri, 'name', e.target.value)}
                   className="flex-1 px-3 py-2 border rounded-lg text-sm"
                 />
-                <input
-                  type="email"
-                  placeholder="邮箱"
-                  value={recip.email ?? ''}
-                  onChange={e => updateRecipient(ni, ri, 'email', e.target.value)}
-                  className="flex-1 px-3 py-2 border rounded-lg text-sm"
-                />
+                <div className="flex-1">
+                  <EmailInput
+                    value={recip.email ?? ''}
+                    onChange={(val) => updateRecipient(ni, ri, 'email', val)}
+                    placeholder="邮箱"
+                    className="w-full px-3 py-2 border rounded-lg text-sm"
+                  />
+                </div>
                 {notif.recipients.length > 1 && (
                   <button
                     type="button"
