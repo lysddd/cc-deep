@@ -11,5 +11,10 @@ export async function GET(request: Request) {
     await supabase.auth.verifyOtp({ token_hash: tokenHash, type: type as any })
   }
 
+  // Redirect password recovery to reset page
+  if (type === 'recovery') {
+    return NextResponse.redirect(new URL('/reset-password', request.url))
+  }
+
   return NextResponse.redirect(new URL('/dashboard', request.url))
 }
