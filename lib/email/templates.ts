@@ -28,5 +28,10 @@ export function renderTemplate(
 
   const disclaimer = `\n\n---\n此提醒由 ${variables.creator_name} 通过 TodoNow 发送，如不想接收请联系发送者。`
 
+  // Add TodoNow prefix to subject
+  if (!subject.startsWith('【TodoNow】')) {
+    subject = `【TodoNow】${subject}`
+  }
+
   return { subject, body, disclaimer }
 }
