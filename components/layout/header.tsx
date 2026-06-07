@@ -1,7 +1,5 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { Menu } from 'lucide-react'
 
 interface Props {
@@ -9,29 +7,12 @@ interface Props {
 }
 
 export function Header({ onMenuClick }: Props) {
-  const [email, setEmail] = useState('')
-  const supabase = createClient()
-
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (data.user) setEmail(data.user.email ?? '')
-    })
-  }, [])
-
   return (
-    <header className="h-16 border-b bg-white flex items-center justify-between px-4 md:px-6">
-      <div className="flex items-center gap-3">
-        <button
-          onClick={onMenuClick}
-          className="md:hidden p-1 hover:bg-gray-100 rounded"
-        >
-          <Menu size={22} />
-        </button>
-        <h2 className="text-lg font-semibold text-gray-800">TodoNow</h2>
-      </div>
-      <div className="flex items-center gap-3">
-        <span className="text-sm text-gray-500 hidden sm:block" suppressHydrationWarning>{email}</span>
-      </div>
+    <header className="h-14 lg:hidden flex items-center gap-3 px-4 bg-white border-b border-stone-200 sticky top-0 z-30">
+      <button onClick={onMenuClick} className="p-1.5 hover:bg-stone-50 rounded-md cursor-pointer">
+        <Menu size={20} className="text-stone-500" />
+      </button>
+      <span className="text-base font-semibold text-stone-800">TodoNow</span>
     </header>
   )
 }

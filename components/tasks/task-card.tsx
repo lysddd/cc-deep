@@ -7,10 +7,11 @@ import type { Task } from '@/types'
 function formatCondition(task: Task): string {
   const cfg = task.condition_config
   if (cfg.type === 'checkin') {
-    return `${cfg.frequency === 'daily' ? '每天' : cfg.frequency === 'weekly' ? '每周' : '每月'}签到 ${cfg.count_per_period} 次`
+    const freq = cfg.frequency === 'daily' ? '每天' : cfg.frequency === 'weekly' ? '每周' : '每月'
+    return `${freq}签到 ${cfg.count_per_period} 次`
   }
   if (cfg.type === 'deadline') {
-    return `截止: ${new Date(cfg.deadline).toLocaleString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' })}`
+    return `截止: ${new Date(cfg.deadline).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}`
   }
   if (cfg.type === 'count') {
     return `${cfg.target_count} 次/${cfg.frequency === 'daily' ? '天' : '周'}`
@@ -26,38 +27,43 @@ function isEnded(task: Task): boolean {
   return false
 }
 
-export function TaskCard({ task }: { task: Task }) {
-  const typeLabels: Record<string, string> = {
-    checkin: '签到',
-    deadline: '截止',
-    count: '计数',
-  }
+const typeTag = {
+  checkin: 'bg-lime-100 text-lime-700',
+  deadline: 'bg-blue-50 text-blue-600',
+  count: 'bg-amber-50 text-amber-600',
+}
 
+const typeLabel: Record<string, string> = {
+  checkin: '签到',
+  deadline: '截止',
+  count: '计数',
+}
+
+export function TaskCard({ task }: { task: Task }) {
   const ended = isEnded(task)
 
   return (
     <Link href={`/tasks/${task.id}`}>
-      <div className={`bg-white rounded-lg border p-4 hover:shadow-md transition-shadow ${ended ? 'opacity-60' : ''}`}>
+      <div className={`bg-white border border-stone-200 rounded-lg p-5 hover:border-stone-300 hover:shadow-sm transition-all cursor-pointer ${ended ? 'opacity-60' : ''}`}>
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
-            <span className={`text-xs px-2 py-0.5 rounded-full font-medium
-              ${task.task_type === 'checkin' ? 'bg-green-100 text-green-700' :
-                task.task_type === 'deadline' ? (ended ? 'bg-gray-100 text-gray-500' : 'bg-orange-100 text-orange-700') :
-                'bg-purple-100 text-purple-700'}`}>
-              {typeLabels[task.task_type]}
+            <span className={`text-xs px-2.5 py-0.5 rounded-md font-medium ${ended ? 'bg-stone-100 text-stone-400' : typeTag[task.task_type] ?? typeTag.checkin}`}>
+              {typeLabel[task.task_type]}
             </span>
             {ended && (
-              <span className="text-xs px-2 py-0.5 rounded-full bg-gray-200 text-gray-600">已结束</span>
+              <span className="text-xs px-2 py-0.5 rounded-md bg-stone-100 text-stone-400">已结束</span>
             )}
             {!task.is_active && !ended && (
-              <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">已暂停</span>
+              <span className="text-xs px-2 py-0.5 rounded-md bg-stone-100 text-stone-400">已暂停</span>
             )}
           </div>
-          {(task.notifications?.length ?? 0) > 0 && <Bell size={14} className="text-gray-400" />}
+          {(task.notifications?.length ?? 0) > 0 && <Bell size={14} className="text-stone-300" />}
         </div>
 
-        <h3 className={`font-semibold mb-1 ${ended ? 'text-gray-400' : ''}`}>{task.title}</h3>
-        <p className="text-sm text-gray-500">{formatCondition(task)}</p>
+        <h3 className={`font-medium text-sm mb-1 ${ended ? 'text-stone-400' : 'text-stone-800'}`}>
+          {task.title}
+        </h3>
+        <p className="text-[13px] text-stone-400">{formatCondition(task)}</p>
       </div>
     </Link>
   )

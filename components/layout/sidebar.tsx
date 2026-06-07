@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { LayoutDashboard, ListTodo, Settings, LogOut, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { useEffect, useState } from 'react'
 
 const links = [
   { href: '/dashboard', label: '仪表盘', icon: LayoutDashboard },
@@ -19,6 +20,17 @@ interface Props {
 export function Sidebar({ open, onClose }: Props) {
   const pathname = usePathname()
   const supabase = createClient()
+  const [email, setEmail] = useState('')
+  const [name, setName] = useState('')
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) {
+        setEmail(data.user.email ?? '')
+        setName(data.user.user_metadata?.display_name || data.user.email?.charAt(0)?.toUpperCase() || '用')
+      }
+    })
+  }, [])
 
   async function handleSignOut() {
     await supabase.auth.signOut()
@@ -27,28 +39,20 @@ export function Sidebar({ open, onClose }: Props) {
 
   return (
     <>
-      {/* Mobile overlay */}
-      {open && (
-        <div className="fixed inset-0 bg-black/50 z-40 md:hidden" onClick={onClose} />
-      )}
-
-      {/* Sidebar */}
-      <aside className={
-        `fixed md:sticky top-0 left-0 z-50 md:z-auto
-         w-64 bg-white border-r min-h-screen flex flex-col
-         transition-transform duration-200 ease-in-out
-         ${open ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`
-      }>
-        <div className="p-6 border-b flex items-center justify-between">
-          <Link href="/dashboard" className="text-xl font-bold text-blue-600" onClick={onClose}>
+      {open && <div className="fixed inset-0 bg-black/40 z-40 lg:hidden" onClick={onClose} />}
+      <aside className={`
+        fixed lg:sticky top-0 left-0 z-50 lg:z-0
+        w-[220px] bg-white border-r border-stone-200 h-screen flex flex-col
+        transition-transform duration-200 ease-in-out
+        ${open ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+      `}>
+        <div className="px-5 pt-5 mb-8">
+          <Link href="/dashboard" className="text-xl font-semibold text-brand-600 tracking-tight" onClick={onClose}>
             TodoNow
           </Link>
-          <button onClick={onClose} className="md:hidden p-1 hover:bg-gray-100 rounded">
-            <X size={20} />
-          </button>
         </div>
 
-        <nav className="flex-1 p-4 space-y-1">
+        <nav className="flex-1 flex flex-col gap-0.5 px-2">
           {links.map(link => {
             const Icon = link.icon
             const active = pathname.startsWith(link.href)
@@ -57,8 +61,8 @@ export function Sidebar({ open, onClose }: Props) {
                 key={link.href}
                 href={link.href}
                 onClick={onClose}
-                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors
-                  ${active ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-100'}`}
+                className={`flex items-center gap-2.5 px-4 py-2.5 text-sm rounded-r-lg mr-2 transition-colors
+                  ${active ? 'bg-brand-50 text-brand-600 font-medium' : 'text-stone-400 hover:bg-stone-50 hover:text-stone-600'}`}
               >
                 <Icon size={18} />
                 {link.label}
@@ -67,12 +71,21 @@ export function Sidebar({ open, onClose }: Props) {
           })}
         </nav>
 
-        <div className="p-4 border-t">
+        <div className="px-5 py-4 border-t border-stone-200 mt-auto">
+          <div className="flex items-center gap-2.5 mb-3">
+            <div className="w-8 h-8 rounded-full bg-brand-600 text-white flex items-center justify-center text-sm font-medium shrink-0">
+              {name}
+            </div>
+            <div className="min-w-0">
+              <div className="text-[13px] font-medium text-stone-800 truncate">{name}</div>
+              <div className="text-[11px] text-stone-400 truncate">{email}</div>
+            </div>
+          </div>
           <button
             onClick={handleSignOut}
-            className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 w-full"
+            className="flex items-center gap-2 w-full px-3 py-2 text-sm text-stone-400 hover:bg-stone-50 hover:text-stone-600 rounded-lg transition-colors cursor-pointer"
           >
-            <LogOut size={18} />
+            <LogOut size={16} />
             退出登录
           </button>
         </div>
