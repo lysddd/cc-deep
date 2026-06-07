@@ -11,6 +11,24 @@ interface TaskItem {
   condition_config: Record<string, unknown>
 }
 
+function isTaskForToday(task: TaskItem): boolean {
+  // Checkin and count tasks: always show
+  if (task.task_type === 'checkin' || task.task_type === 'count') return true
+
+  // Deadline tasks: only show if deadline is today
+  if (task.task_type === 'deadline') {
+    const cfg = task.condition_config
+    if (cfg.type !== 'deadline' || !cfg.deadline) return false
+    const dl = new Date(cfg.deadline as string)
+    const now = new Date()
+    return dl.getFullYear() === now.getFullYear() &&
+           dl.getMonth() === now.getMonth() &&
+           dl.getDate() === now.getDate()
+  }
+
+  return false
+}
+
 export function TodayCheckins() {
   const [tasks, setTasks] = useState<TaskItem[]>([])
   const [checked, setChecked] = useState<Set<string>>(new Set())
@@ -37,7 +55,9 @@ export function TodayCheckins() {
         .eq('user_id', user.id)
         .gte('checked_at', today.toISOString())
 
-      if (allTasks) setTasks(allTasks)
+      // Filter: only show tasks relevant for today
+      const filtered = allTasks ? allTasks.filter(isTaskForToday) : []
+      if (filtered) setTasks(filtered)
       if (todayCheckins) setChecked(new Set(todayCheckins.map(c => c.task_id)))
       setLoading(false)
     }

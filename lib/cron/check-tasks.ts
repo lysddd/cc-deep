@@ -27,12 +27,27 @@ export async function checkAndNotify() {
     const shouldNotify = await evaluateCondition(task)
     if (!shouldNotify) continue
 
-    // Dedup: don't notify if already sent within the last hour
+    // Don't notify for deadline tasks that have already passed
+    if (task.condition_config.type === 'deadline') {
+      const dl = task.condition_config as { deadline: string }
+      if (Date.now() > new Date(dl.deadline).getTime()) {
+        // Check if already notified once for this deadline
+        const { data: alreadyNotified } = await supabase
+          .from('notification_logs')
+          .select('id')
+          .eq('task_id', task.id)
+          .gte('sent_at', new Date(dl.deadline).toISOString())
+          .limit(1)
+        if (alreadyNotified && alreadyNotified.length > 0) continue
+      }
+    }
+
+    // Dedup: don't notify if already sent within the last 24 hours
     const { data: recentLogs } = await supabase
       .from('notification_logs')
       .select('id')
       .eq('task_id', task.id)
-      .gte('sent_at', new Date(Date.now() - 3600000).toISOString())
+      .gte('sent_at', new Date(Date.now() - 86400000).toISOString())
       .limit(1)
 
     if (recentLogs && recentLogs.length > 0) continue
