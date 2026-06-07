@@ -8,75 +8,111 @@ import Link from 'next/link'
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState(false)
+  const [message, setMessage] = useState('')
+  const [messageType, setMessageType] = useState<'info' | 'error' | 'success'>('info')
   const [loading, setLoading] = useState(false)
-  const [hasSession, setHasSession] = useState(true)
+  const [verified, setVerified] = useState(false)
+  const [checking, setChecking] = useState(true)
   const router = useRouter()
   const supabase = createClient()
 
   useEffect(() => {
-    // Check if user has a valid recovery session
-    supabase.auth.getSession().then(({ data }) => {
-      if (!data.session) {
-        setHasSession(false)
-        setError('重置链接已过期或无效，请重新申请密码重置')
+    async function verifyToken() {
+      const params = new URLSearchParams(window.location.search)
+      const tokenHash = params.get('token_hash')
+      const type = params.get('type')
+
+      // Check for errors in URL hash
+      if (window.location.hash) {
+        const hashParams = new URLSearchParams(window.location.hash.substring(1))
+        const errorCode = hashParams.get('error_code')
+        if (errorCode === 'otp_expired') {
+          setMessage('此链接已过期，请重新申请密码重置')
+          setMessageType('error')
+          setChecking(false)
+          return
+        }
       }
-    })
+
+      if (!tokenHash || type !== 'recovery') {
+        setMessage('无效的密码重置链接，请重新申请')
+        setMessageType('error')
+        setChecking(false)
+        return
+      }
+
+      const { error } = await supabase.auth.verifyOtp({
+        token_hash: tokenHash,
+        type: 'recovery',
+      })
+
+      if (error) {
+        if (error.code === 'otp_expired') {
+          setMessage('此链接已过期，请重新申请密码重置')
+        } else {
+          setMessage(error.message)
+        }
+        setMessageType('error')
+      } else {
+        setVerified(true)
+      }
+      setChecking(false)
+    }
+    verifyToken()
   }, [])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    setError('')
+    setMessage('')
+    setMessageType('info')
 
     if (password !== confirmPassword) {
-      setError('两次输入的密码不一致')
+      setMessage('两次输入的密码不一致')
+      setMessageType('error')
       return
     }
 
     if (password.length < 6) {
-      setError('密码至少需要 6 位')
+      setMessage('密码至少需要 6 位')
+      setMessageType('error')
       return
     }
 
     setLoading(true)
-
     const { error } = await supabase.auth.updateUser({ password })
 
     if (error) {
-      if (error.message?.includes('expired') || error.code === 'otp_expired') {
-        setError('重置链接已过期，请重新申请密码重置')
-      } else {
-        setError(error.message)
-      }
+      setMessage(error.message)
+      setMessageType('error')
     } else {
-      setSuccess(true)
-      setTimeout(() => router.push('/dashboard'), 2000)
+      setMessage('密码已成功更新！')
+      setMessageType('success')
+      setTimeout(() => router.push('/login'), 1500)
     }
     setLoading(false)
   }
 
-  if (success) {
+  if (checking) {
     return (
-      <div className="bg-white rounded-xl shadow-sm border p-8 text-center">
-        <h1 className="text-2xl font-bold mb-2">密码已重置</h1>
-        <p className="text-gray-500 mb-4">密码修改成功，即将跳转到仪表盘...</p>
-        <Link href="/dashboard" className="text-blue-600 hover:underline text-sm">
-          立即前往
-        </Link>
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <p className="text-gray-400">验证中...</p>
       </div>
     )
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border p-8">
+    <div className="bg-white rounded-xl shadow-sm border p-8 max-w-md mx-auto">
       <h1 className="text-2xl font-bold text-center mb-2">重置密码</h1>
       <p className="text-gray-500 text-center mb-6">请设置你的新密码</p>
 
-      {error && (
-        <div className="bg-red-50 text-red-600 text-sm p-3 rounded-lg mb-4">
-          <p>{error}</p>
-          {!hasSession && (
+      {message && (
+        <div className={`text-sm p-3 rounded-lg mb-4 ${
+          messageType === 'error' ? 'bg-red-50 text-red-600' :
+          messageType === 'success' ? 'bg-green-50 text-green-600' :
+          'bg-blue-50 text-blue-600'
+        }`}>
+          <p>{message}</p>
+          {!verified && messageType === 'error' && (
             <Link href="/forgot-password" className="text-blue-600 hover:underline text-sm mt-2 inline-block">
               重新申请密码重置
             </Link>
@@ -84,7 +120,7 @@ export default function ResetPasswordPage() {
         </div>
       )}
 
-      {hasSession && (
+      {verified && messageType !== 'success' && (
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium mb-1">新密码</label>
@@ -117,7 +153,7 @@ export default function ResetPasswordPage() {
             disabled={loading}
             className="w-full bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50"
           >
-            {loading ? '重置中...' : '重置密码'}
+            {loading ? '重置中...' : '确认修改'}
           </button>
         </form>
       )}
